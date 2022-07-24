@@ -36,8 +36,17 @@ public class TileGeneration : MonoBehaviour
     [SerializeField]
     private TerrainType[] terrainTypes;
 
-
+    [SerializeField]
+    private float heightMultiplier;
    
+
+    //Use cure to control falttening to produce more realistic planes
+    [SerializeField]
+    private AnimationCurve heightCurve;
+
+    [SerializeField]
+    private Wave[] waves;
+
     void OnValidate(){
         Debug.Log("Float was changed");
         //Do Something
@@ -53,19 +62,26 @@ public class TileGeneration : MonoBehaviour
 
     void GenerateTile(){
         //Calculate depth and width of height map based on mesh vertices
-        Vector3[] meshVertices = meshFilter.sharedMesh.vertices;//this.meshFilter.mesh.vertices;
+        Vector3[] meshVertices = this.meshFilter.mesh.vertices;
+        //this.meshFilter.sharedMesh.vertices;//
 
         int tileDepth= (int)Mathf.Sqrt(meshVertices.Length);
         int tileWidth= tileDepth;
 
+        //Get the offset based on the tile positions
+        float offsetX = -this.gameObject.transform.position.x;
+        float offsetZ = -this.gameObject.transform.position.z;
+        Debug.Log(offsetX+":"+offsetZ);
+
         //calculate the offsets based on the tile position
-        float[,] heightMap = this.noiseMapGeneration.GenerateNoiseMap(tileDepth,tileWidth,this.mapScale);
+        float[,] heightMap = this.noiseMapGeneration.GenerateNoiseMap(tileDepth,tileWidth,this.mapScale,offsetX,offsetZ,waves);
 
 
         //Generate the heightmap using noise
         Texture2D tileTexture = BuildTexture(heightMap);
-        this.tileRenderer.sharedMaterial.mainTexture=tileTexture;
-        //this.tileRenderer.material.mainTexture=tileTexture;
+        //this.tileRenderer.sharedMaterial.mainTexture=tileTexture;
+        this.tileRenderer.material.mainTexture=tileTexture;
+        UpdateMeshVertices(heightMap);
     }
 
 
@@ -98,15 +114,41 @@ public class TileGeneration : MonoBehaviour
         return tileTexture;
     }
 
-
     private Color chooseTerrainType(float heightValue){
-
         foreach(TerrainType terrainObject in this.terrainTypes){
             if(heightValue <= terrainObject.height){
                 return terrainObject.color;
             }
         }
-
         return terrainTypes[^1].color;
     }
+
+    private void UpdateMeshVertices(float[,] heightMap){
+        //Iterate over the meshVertices, update the heights to the height map
+        int tileDepth = heightMap.GetLength(0);
+        int tileWidth = heightMap.GetLength(1);
+
+        Vector3[] meshVertices = this.meshFilter.mesh.vertices;
+
+        int vertexIndex = 0;
+        for(int z = 0; z < tileDepth; z++){
+            for(int x = 0; x < tileWidth; x++){
+                float height = heightMap[z,x];
+                Vector3 vertex = meshVertices[vertexIndex];
+                meshVertices[vertexIndex] =  new Vector3(vertex.x,height*heightCurve.Evaluate(height) * heightMultiplier, vertex.z);
+                vertexIndex++;
+            }
+        }
+
+        //Apply the mesh vertices to the mesh, update the properties
+        this.meshFilter.mesh.vertices = meshVertices;
+        this.meshFilter.mesh.RecalculateBounds();
+        this.meshFilter.mesh.RecalculateNormals();
+
+        //Update the collider 
+        this.meshCollider.sharedMesh = this.meshFilter.mesh;
+
+    }
+
+ 
 }
