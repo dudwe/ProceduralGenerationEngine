@@ -14,6 +14,12 @@ public class LevelGeneration : MonoBehaviour
     [SerializeField]
     private GameObject tilePrefab;
 
+    [SerializeField]
+    private GameObject waterPrefab;
+
+    //[SerializeField]
+    //private int waterOffsetY;
+
     void Start(){
         GenerateMap();
     }
@@ -32,8 +38,14 @@ public class LevelGeneration : MonoBehaviour
                 Vector3 tilePosition = new Vector3(this.gameObject.transform.position.x + xTileIndex * tileWidth,
                 this.gameObject.transform.position.y,
                 this.gameObject.transform.position.z + zTileIndex * tileDepth);
+
+                //Vector3 waterTilePosition = new Vector3(this.gameObject.transform.position.x + xTileIndex * tileWidth,
+                //this.gameObject.transform.position.y+waterOffsetY,
+                //this.gameObject.transform.position.z + zTileIndex * tileDepth);
+
                 //Instantiate new tile
                 GameObject tile = Instantiate(tilePrefab,tilePosition,Quaternion.identity) as GameObject;
+                //GameObject watertile = Instantiate(waterPrefab,waterTilePosition,Quaternion.identity) as GameObject;
             }   
         }
     }
