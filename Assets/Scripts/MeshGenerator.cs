@@ -186,7 +186,7 @@ public class MeshGenerator : MonoBehaviour
             return;
         }
         for (int i = 0; i < vertices.Length; i++){
-            Gizmos.DrawSphere(vertices[i],.1f);
+            //Gizmos.DrawSphere(vertices[i],.1f);
         }
     }
 
