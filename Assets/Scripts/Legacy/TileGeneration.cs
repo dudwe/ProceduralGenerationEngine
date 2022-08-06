@@ -48,7 +48,6 @@ public class TileGeneration : MonoBehaviour
     private Wave[] waves;
 
     void OnValidate(){
-        Debug.Log("Float was changed");
         //Do Something
         GenerateTile();
     }
@@ -62,7 +61,7 @@ public class TileGeneration : MonoBehaviour
 
     void GenerateTile(){
         //Calculate depth and width of height map based on mesh vertices
-        Vector3[] meshVertices = this.meshFilter.mesh.vertices;
+        Vector3[] meshVertices = this.meshFilter.sharedMesh.vertices;
         //this.meshFilter.sharedMesh.vertices;//
 
         int tileDepth= (int)Mathf.Sqrt(meshVertices.Length);
@@ -71,7 +70,6 @@ public class TileGeneration : MonoBehaviour
         //Get the offset based on the tile positions
         float offsetX = -this.gameObject.transform.position.x;
         float offsetZ = -this.gameObject.transform.position.z;
-        Debug.Log(offsetX+":"+offsetZ);
 
         //calculate the offsets based on the tile position
         float[,] heightMap = this.noiseMapGeneration.GenerateNoiseMap(tileDepth,tileWidth,this.mapScale,offsetX,offsetZ,waves);
@@ -146,7 +144,7 @@ public class TileGeneration : MonoBehaviour
         this.meshFilter.mesh.RecalculateNormals();
 
         //Update the collider 
-        this.meshCollider.sharedMesh = this.meshFilter.mesh;
+        this.meshCollider.sharedMesh = this.meshFilter.sharedMesh;
 
     }
 
