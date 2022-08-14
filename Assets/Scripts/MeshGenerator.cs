@@ -47,51 +47,76 @@ public class MeshGenerator : MonoBehaviour
 
     [SerializeField]
     bool useFalloff;
-
+   [SerializeField]
+    bool generateTrees;
     [SerializeField]
     float falloff_a =3;
     [SerializeField]
     float falloff_b = 2.2f;
- 
-  
-
-    void OnValidate(){
-        meshFilter = GetComponent<MeshFilter>();
-        meshFilter.sharedMesh=GetComponent<MeshFilter>().sharedMesh;
-        //GetComponent<MeshFilter>().sharedMesh = meshFilter.sharedMesh;
-        //mesh = new Mesh();
-        //GetComponent<MeshFilter>().mesh=mesh;
-        if(useFalloff){
-            fallOffMap = FallOfGenerator.GenerateFallofMap (xSize+1,falloff_a,falloff_b);
-        }
-        float[,] heightMap = CreateShape();
-        
-        ApplyTexture(heightMap);
-        UpdateMesh();
-      
-    }
-    void Start()
-    {   
-        //mesh.Clear();
-        meshFilter = GetComponent<MeshFilter>();
-        meshFilter.sharedMesh=GetComponent<MeshFilter>().sharedMesh;
-        if(useFalloff){
-            fallOffMap = FallOfGenerator.GenerateFallofMap (xSize+1,falloff_a,falloff_b);
-        }
-        //GetComponent<MeshFilter>().sharedMesh = meshFilter.sharedMesh;
-        //mesh = new Mesh();
-      
-        //GetComponent<MeshFilter>().mesh=mesh;
-
-        float[,] heightMap = CreateShape();
-        
-        ApplyTexture(heightMap);
-
-        UpdateMesh();
-    }
 
     [SerializeField]
+    GameObject[] objectLst;
+ 
+    [SerializeField]
     private Wave[] waves;
+
+    [SerializeField]
+    [Range(0, 100)]
+
+    int grassObjectDensity=15;
+
+    [SerializeField]
+    [Range(0, 100)]
+    int forestObjectDensity=50;
+
+    void OnValidate(){
+        ClearGameObjects();
+        meshFilter = GetComponent<MeshFilter>();
+        meshFilter.sharedMesh=GetComponent<MeshFilter>().sharedMesh;
+        //GetComponent<MeshFilter>().sharedMesh = meshFilter.sharedMesh;
+        //mesh = new Mesh();
+        //GetComponent<MeshFilter>().mesh=mesh;
+        if(useFalloff){
+            fallOffMap = FallOfGenerator.GenerateFallofMap (xSize+1,falloff_a,falloff_b);
+        }
+        float[,] heightMap = CreateShape();
+        
+        ApplyTexture(heightMap);
+        UpdateMesh();
+        if(generateTrees){
+            MapEmbellishments(heightMap);
+        }
+    }
+
+
+
+    void Start()
+    {   
+        ClearGameObjects();
+        meshFilter = GetComponent<MeshFilter>();
+        meshFilter.sharedMesh=GetComponent<MeshFilter>().sharedMesh;
+        if(useFalloff){
+            fallOffMap = FallOfGenerator.GenerateFallofMap (xSize+1,falloff_a,falloff_b);
+        }
+        float[,] heightMap = CreateShape();
+        ApplyTexture(heightMap);
+        UpdateMesh();
+        if(generateTrees){
+            MapEmbellishments(heightMap);
+        }
+
+    }
+
+    void ClearGameObjects(){
+        GameObject[] clones = GameObject.FindGameObjectsWithTag ("TreeClone");
+        foreach (var clone in clones){
+            StartCoroutine(Destroy(clone));
+        }        
+    }
+     IEnumerator Destroy(GameObject obj){
+        yield return null;
+        DestroyImmediate(obj);
+    }
  
 
     void ApplyTexture(float[,] heightMap){
@@ -122,7 +147,7 @@ public class MeshGenerator : MonoBehaviour
                 }
                 float height = heightMap[z,x]; //height*heightCurve.Evaluate(height) * heightMultiplier
                 vertices[i] = new Vector3(x,height*heightCurve.Evaluate(height) * heightMultiplier,z);
-                
+                //Debug.Log(vertices[i].y+": height is "+heightMap[z,x] );
                 i++;
             }
         }
@@ -176,6 +201,8 @@ public class MeshGenerator : MonoBehaviour
         
         this.meshFilter.sharedMesh.RecalculateBounds();
         this.meshFilter.sharedMesh.RecalculateNormals();
+        this.meshCollider.sharedMesh = this.meshFilter.sharedMesh;
+
         //mesh.RecalculateBounds();
        // mesh.RecalculateNormals();
  
@@ -219,6 +246,59 @@ public class MeshGenerator : MonoBehaviour
         tileTexture.SetPixels(colorMap);
         tileTexture.Apply();
         return tileTexture;
+    }
+
+    private void MapEmbellishments(float[,] heightMap){
+        int tileDepth = zSize;
+        int tileWidth = xSize;        
+        float lastHeight = 0f;
+        float noiseHeight= 0f;
+
+        for(int i = 0, z = 0; z <= zSize;z++){
+            for(int x = 0; x <= xSize; x++){
+                noiseHeight = heightMap[z,x];
+                //meshFilter.sharedMesh.vertices[i].y;
+                if(getTerrainColorName(noiseHeight)=="Grass"){
+                    createTerrainObject(grassObjectDensity,lastHeight,noiseHeight,i);
+                }
+
+                if(getTerrainColorName(noiseHeight)=="Forest"){
+                    createTerrainObject(forestObjectDensity,lastHeight,noiseHeight,i);
+                }
+                lastHeight=noiseHeight;
+                i++;
+            }
+        }
+    }
+
+
+    private void createTerrainObject(int density,float lastHeight, float noiseHeight,int i ){
+
+        if(System.Math.Abs(lastHeight- noiseHeight) < 0.25){ //Gradient
+            if(noiseHeight>0.400){//Threshold min
+                //desnity
+                if(Random.Range(0,100)<=density){
+                    GameObject objSpawn = objectLst[Random.Range(0,objectLst.Length)];
+                    float spawnAboveTerrain = noiseHeight * 2;
+                    GameObject c = Instantiate(objSpawn,new Vector3(meshFilter.sharedMesh.vertices[i].x,spawnAboveTerrain,meshFilter.sharedMesh.vertices[i].z),Quaternion.identity);
+                    
+                    c.tag = "TreeClone";
+                    c.GetComponent<TerrainObject>().FindLand();
+
+                }
+            }
+        }
+
+    }
+
+
+    private string getTerrainColorName(float heightValue){
+        foreach(TerrainType terrainObject in this.terrainTypes){
+            if(heightValue <= terrainObject.height){
+                return terrainObject.name;
+            }
+        }
+        return terrainTypes[^1].name;
     }
 
     private Color chooseTerrainType(float heightValue){

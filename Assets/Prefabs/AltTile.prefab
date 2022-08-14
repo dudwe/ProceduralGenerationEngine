@@ -185,8 +185,10 @@ MonoBehaviour:
     color: {r: 0.3490566, g: 0.2105968, b: 0.09803922, a: 1}
   meshRenderer: {fileID: 0}
   useFalloff: 0
+  generateTrees: 0
   falloff_a: 3
   falloff_b: 2.2
+  objectLst: []
   waves:
   - seed: 5316
     frequency: 1
@@ -197,6 +199,8 @@ MonoBehaviour:
   - seed: 6712
     frequency: 0.25
     amplitude: 4
+  grassObjectDensity: 15
+  forestObjectDensity: 50
 --- !u!114 &2783710821303337190
 MonoBehaviour:
   m_ObjectHideFlags: 0
